@@ -141,7 +141,7 @@ export function buildEnvironment(preset: LocationPreset): EnvironmentHandle {
       lamp.add(pole, bulb);
       return lamp;
     }, 8);
-  } else {
+  } else if (preset.id === 'rooftop') {
     // rooftop: concrete slab, parapet, city silhouettes, AC units
     const slabGeo = new THREE.BoxGeometry(14, 0.4, 14);
     const slab = new THREE.Mesh(slabGeo, std('#4a4f58', 0.9));
@@ -179,6 +179,54 @@ export function buildEnvironment(preset: LocationPreset): EnvironmentHandle {
     const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 3.4, 6), std('#6a7078'));
     ant.position.set(2.5, 1.7, -2.5);
     group.add(ant);
+  } else if (preset.id === 'terrace') {
+    // stone terrace with planters
+    const deck = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 0.15, 32), std('#9a9588'));
+    deck.position.y = 0.05;
+    group.add(deck);
+    scatter(group, 8, () => {
+      const pot = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.4, 10), std('#7a6a5a'));
+      base.position.y = 0.2;
+      const plant = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), std('#3a6a3a'));
+      plant.position.y = 0.55;
+      pot.add(base, plant);
+      return pot;
+    }, 5);
+    scatter(group, 4, () => makeTree('#5a4632', '#4a7c42', 2.0), 7);
+  } else if (preset.id === 'forest') {
+    scatter(group, 22, () => makeTree('#4a3a28', '#2f5a2a', 2.5 + Math.random() * 1.8), 14);
+    scatter(group, 30, () => {
+      const g = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.35, 5), std('#3a6a32'));
+      g.position.y = 0.15;
+      return g;
+    }, 6);
+  } else if (preset.id === 'courtyard') {
+    // modern paved courtyard with benches and planters
+    const paver = new THREE.Mesh(new THREE.BoxGeometry(12, 0.08, 12), std('#6a6860'));
+    paver.position.y = 0.02;
+    group.add(paver);
+    scatter(group, 6, () => {
+      const bench = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.4), std('#3a3a3a'));
+      seat.position.y = 0.42;
+      bench.add(seat);
+      for (const s of [-0.55, 0.55]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.3), std('#2a2a2a'));
+        leg.position.set(s, 0.21, 0);
+        bench.add(leg);
+      }
+      return bench;
+    }, 5);
+    scatter(group, 5, () => {
+      const pot = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), std('#555555'));
+      base.position.y = 0.25;
+      const plant = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), std('#3a6a3a'));
+      plant.position.y = 0.65;
+      pot.add(base, plant);
+      return pot;
+    }, 4);
   }
 
   // ---- wind particles ----
