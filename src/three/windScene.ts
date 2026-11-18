@@ -173,9 +173,9 @@ export class WindScene {
     this.windSmooth += (this.wind - this.windSmooth) * Math.min(1, dt * 6);
     const w = this.windSmooth;
 
-    // ambient + gusts shaping
-    const amb = this.envPreset ? this.envPreset.ambient : 0.1;
-    const effective = Math.min(1, Math.max(amb, w));
+    // The character cloth must stay still when the microphone is idle.
+    // Ambient wind is reserved for environmental particles/foliage.
+    const environmentWind = this.envPreset ? Math.min(1, Math.max(this.envPreset.ambient, w)) : w;
 
     // slow idle sway of the whole figure
     if (this.rig) {
@@ -186,7 +186,7 @@ export class WindScene {
     }
 
     this.dress?.update(dt, time, w);
-    this.env?.update(dt, time, effective);
+    this.env?.update(dt, time, environmentWind);
 
     // camera micro-shake with strong wind + orbit yaw
     this.yaw += (this.rotateTarget - this.yaw) * Math.min(1, dt * 5);
