@@ -29,6 +29,8 @@ export class WindScene {
   private resizeObs: ResizeObserver;
   private rotateTarget = 0;
   private yaw = 0;
+  private distance = 3.4;
+  private distanceTarget = 3.4;
   private frames = 0;
   private fpsAt = 0;
   private characterPreset: CharacterPreset;
@@ -80,6 +82,7 @@ export class WindScene {
       hairColor: preset.hairColor,
       dressLength: preset.dressLength,
       fit: preset.fit,
+      style: preset.style,
     });
   }
 
@@ -141,11 +144,16 @@ export class WindScene {
 
   /** Drag-to-orbit yaw offset in radians */
   addYaw(delta: number) {
-    this.rotateTarget = THREE.MathUtils.clamp(this.rotateTarget + delta, -0.9, 0.9);
+    this.rotateTarget = THREE.MathUtils.clamp(this.rotateTarget + delta, -1.2, 1.2);
+  }
+
+  addZoom(delta: number) {
+    this.distanceTarget = THREE.MathUtils.clamp(this.distanceTarget + delta, 1.8, 6.5);
   }
 
   resetYaw() {
     this.rotateTarget = 0;
+    this.distanceTarget = 3.4;
   }
 
   private resize() {
@@ -173,9 +181,9 @@ export class WindScene {
     this.windSmooth += (this.wind - this.windSmooth) * Math.min(1, dt * 6);
     const w = this.windSmooth;
 
-    // The character cloth must stay still when the microphone is idle.
-    // Ambient wind is reserved for environmental particles/foliage.
-    const environmentWind = this.envPreset ? Math.min(1, Math.max(this.envPreset.ambient, w)) : w;
+    // ambient + gusts shaping
+    const amb = this.envPreset ? this.envPreset.ambient : 0.1;
+    const effective = Math.min(1, Math.max(amb, w));
 
     // slow idle sway of the whole figure
     if (this.rig) {
@@ -185,15 +193,17 @@ export class WindScene {
       this.rig.head.rotation.x = Math.sin(time * 0.7 + 1) * 0.02 - w * 0.06;
     }
 
-    this.dress?.update(dt, time, w);
-    this.env?.update(dt, time, environmentWind);
+    this.dress?.update(dt, time, effective);
+    this.env?.update(dt, time, effective);
 
-    // camera micro-shake with strong wind + orbit yaw
+    // camera micro-shake with strong wind + orbit yaw + smooth zoom
     this.yaw += (this.rotateTarget - this.yaw) * Math.min(1, dt * 5);
+    this.distance += (this.distanceTarget - this.distance) * Math.min(1, dt * 4);
     const shake = w * w * 0.012;
-    this.camera.position.x = Math.sin(this.yaw) * 3.4 + Math.sin(time * 13) * shake;
-    this.camera.position.z = Math.cos(this.yaw) * 3.4 + Math.cos(time * 11) * shake;
-    this.camera.position.y = 1.5 + Math.sin(time * 9) * shake * 0.5;
+    const d = this.distance;
+    this.camera.position.x = Math.sin(this.yaw) * d + Math.sin(time * 13) * shake;
+    this.camera.position.z = Math.cos(this.yaw) * d + Math.cos(time * 11) * shake;
+    this.camera.position.y = 1.5 + (d - 3.4) * 0.15 + Math.sin(time * 9) * shake * 0.5;
     this.camera.lookAt(0, 1.05, 0);
 
     this.renderer.render(this.scene, this.camera);
