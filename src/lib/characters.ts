@@ -1,0 +1,48 @@
+import type { CharacterPreset } from './types';
+
+export const CHARACTERS: CharacterPreset[] = [
+  {
+    id: 'amara',
+    name: 'Amara',
+    dressColor: '#7a1f3d',
+    accentColor: '#d4a24e',
+    hairColor: '#1c1210',
+    skinTone: '#5d3a26',
+    dressLength: 1.0,
+    fit: 0.35,
+    description: 'Deep wine gown with gold trim',
+  },
+  {
+    id: 'sofia',
+    name: 'Sofia',
+    dressColor: '#1e3a5f',
+    accentColor: '#c9d6e8',
+    hairColor: '#2a1a10',
+    skinTone: '#e8b98f',
+    dressLength: 0.78,
+    fit: 0.55,
+    description: 'Navy midi with silver sash',
+  },
+  {
+    id: 'mei',
+    name: 'Mei',
+    dressColor: '#3f6b4f',
+    accentColor: '#f0ead6',
+    hairColor: '#120e0c',
+    skinTone: '#f0c9a2',
+    dressLength: 1.0,
+    fit: 0.25,
+    description: 'Emerald full-length with cream belt',
+  },
+  {
+    id: 'lila',
+    name: 'Lila',
+    dressColor: '#b0603a',
+    accentColor: '#7a1f3d',
+    hairColor: '#4a2c14',
+    skinTone: '#caa07a',
+    dressLength: 0.62,
+    fit: 0.4,
+    description: 'Terracotta swing dress',
+  },
+];
