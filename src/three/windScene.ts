@@ -188,9 +188,13 @@ export class WindScene {
     // slow idle sway of the whole figure
     if (this.rig) {
       this.rig.group.rotation.y = Math.sin(time * 0.4) * 0.05;
-      this.rig.torso.position.y = 0.92 + Math.sin(time * 1.7) * 0.004;
+      // gentle breathing / idle motion (do not overwrite base torso Y)
+      this.rig.torso.position.y = Math.sin(time * 1.6) * 0.004;
       this.rig.head.rotation.z = Math.sin(time * 0.9) * 0.03;
-      this.rig.head.rotation.x = Math.sin(time * 0.7 + 1) * 0.02 - w * 0.06;
+      // head.x is also driven by dressSim under wind; keep a soft idle blend
+      if (w < 0.15) {
+        this.rig.head.rotation.x = Math.sin(time * 0.7 + 1) * 0.02;
+      }
     }
 
     this.dress?.update(dt, time, effective);
