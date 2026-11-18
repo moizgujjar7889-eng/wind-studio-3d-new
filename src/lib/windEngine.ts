@@ -146,10 +146,10 @@ export class WindEngine {
     }
 
     // Curve into 0..1 — slightly more sensitive so light blowing registers
-    const shaped = Math.min(1, Math.pow(breath * 8.2, 0.58));
+    const shaped = Math.min(1, Math.pow(breath * 8.0, 0.58));
     this.raw = shaped;
     this.peakHold = Math.max(this.peakHold * 0.993, shaped);
-    // Fast attack, slower release for satisfying gust feel
+    // Fast attack, slow release for gusty feel
     this.smoothed =
       shaped > this.smoothed
         ? this.smoothed + (shaped - this.smoothed) * 0.55
