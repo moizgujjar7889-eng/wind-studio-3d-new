@@ -1,62 +1,28 @@
 # Wind Studio 3D
 
-Interactive 3D experience where you control the wind by blowing into your microphone. Watch the character's dress and hair react in real time, and see her raise her hands to hold the hem when gusts get strong.
+Blow into your phone's microphone and watch an adult character's hair, dupatta /
+scarf and clothes flow in the wind. Everything is full-coverage clothing
+(long sleeves, ankle-length dresses, kameez shalwar, long coat, or trousers with a
+long tunic). The wind only makes fabric and hair move: skirts are capped so they
+cannot ride up, and nothing in the app is designed to reveal anything.
 
-## Features
+## Run
 
-- **Microphone wind control** — blow into the mic to drive the simulation
-- **Manual wind slider** — adjust strength without a mic
-- **Demo gusts** — automatic wind cycle for demos
-- **8 characters** with different outfits (long dress, summer dress, skirt & blouse, jacket & skirt, trousers)
-- **7 locations**: Garden, Beach, Park, Rooftop, Outdoor Terrace, Forest, Modern Courtyard
-- Real-time cloth + hair Verlet simulation
-- Hands react to strong wind (character tries to hold her dress)
-- Orbit camera (drag to rotate, scroll to zoom)
+    npm install
+    npm run dev          # local
+    npm run build        # production build in dist/
 
-## Run locally
+Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`.
+The app is a PWA: open it in Chrome on Android and choose "Install app".
 
-```bash
-npm install
-npm run dev
-```
+## Characters and places
 
-Open the URL shown in the terminal (usually http://localhost:5173).
+- Characters: `src/lib/characters.ts` (colours, outfit style, length). All are adult women.
+- Places: `src/lib/locations.ts` (garden, beach, park, rooftop, terrace, forest, courtyard).
+- Wind, hair, dupatta and cloth physics: `src/three/dressSim.ts` and `src/three/cloth.ts`.
 
-## Deploy (GitHub Pages)
+## Optional realistic models
 
-The included GitHub Actions workflow builds and deploys to GitHub Pages on push to `main`.
-
-1. Push this repo to GitHub
-2. Settings → Pages → Source: GitHub Actions
-3. After the workflow runs, the site will be live
-
-## Project structure
-
-```
-src/
-  App.tsx                 # Main UI + wind controls
-  components/
-    StylePanel.tsx        # Character & location picker
-    WindMeter.tsx         # Wind level display
-  lib/
-    characters.ts         # Character presets
-    locations.ts          # Location presets
-    types.ts
-    windEngine.ts         # Mic + demo wind engines
-  three/
-    character.ts          # Procedural adult female character
-    cloth.ts              # Verlet cloth & hair
-    dressSim.ts           # Dress + hair simulation + hand reaction
-    environment.ts        # Locations / props
-    windScene.ts          # Three.js scene orchestration
-```
-
-## Notes
-
-- Character is procedural (Three.js geometry). For photorealistic GLB models you can place files under `public/assets/characters/` in a future upgrade.
-- Best experience on a device with a working microphone and Chrome / Edge / Safari.
-- Grant microphone permission when the browser asks.
-
-## License
-
-Personal / educational use. Do not use child or teen character models.
+You can drop adult female GLB models (CC0 / licensed, in everyday full-coverage
+clothing) into `public/assets/characters/<id>.glb`. Loading them is not wired in yet;
+the built-in procedural character is used.
