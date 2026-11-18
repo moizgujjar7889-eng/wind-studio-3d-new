@@ -21,36 +21,17 @@ function scatter(group: THREE.Group, count: number, build: (i: number) => THREE.
 function makeTree(trunkColor: string, leafColor: string, h: number) {
   const g = new THREE.Group();
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.07, 0.13, h, 10),
-    new THREE.MeshStandardMaterial({ color: trunkColor, roughness: 0.92 }),
+    new THREE.CylinderGeometry(0.08, 0.14, h, 8),
+    new THREE.MeshStandardMaterial({ color: trunkColor, roughness: 0.9 }),
   );
   trunk.position.y = h / 2;
   g.add(trunk);
-
-  // small branch hints
-  for (let b = 0; b < 2; b++) {
-    const branch = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.04, 0.5 + Math.random() * 0.4, 6),
-      new THREE.MeshStandardMaterial({ color: trunkColor, roughness: 0.9 }),
-    );
-    const ang = (b / 2) * Math.PI + Math.random();
-    branch.position.set(Math.cos(ang) * 0.15, h * 0.55 + b * 0.3, Math.sin(ang) * 0.15);
-    branch.rotation.z = Math.cos(ang) * 0.7;
-    branch.rotation.x = Math.sin(ang) * 0.5;
-    g.add(branch);
-  }
-
-  const leafMat = new THREE.MeshStandardMaterial({ color: leafColor, roughness: 0.82 });
-  // more layered canopy for fuller look
-  for (let i = 0; i < 5; i++) {
-    const s = 1 - i * 0.14;
-    const blob = new THREE.Mesh(new THREE.SphereGeometry(0.7 * s, 14, 12), leafMat);
-    blob.position.set(
-      (Math.random() - 0.5) * 0.45,
-      h + i * 0.32 - 0.1,
-      (Math.random() - 0.5) * 0.45,
-    );
-    blob.scale.y = 0.75 + Math.random() * 0.15;
+  const leafMat = new THREE.MeshStandardMaterial({ color: leafColor, roughness: 0.85 });
+  for (let i = 0; i < 3; i++) {
+    const s = 1 - i * 0.22;
+    const blob = new THREE.Mesh(new THREE.SphereGeometry(0.75 * s, 12, 10), leafMat);
+    blob.position.set((Math.random() - 0.5) * 0.3, h + i * 0.5, (Math.random() - 0.5) * 0.3);
+    blob.scale.y = 0.8;
     g.add(blob);
   }
   return g;
