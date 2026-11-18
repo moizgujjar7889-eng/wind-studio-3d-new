@@ -15,273 +15,226 @@ export interface CharacterRig {
 }
 
 function mat(color: string, rough = 0.6) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: rough,
-    metalness: 0.02,
-  });
+  return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.02 });
 }
 
-function smooth(mesh: THREE.Mesh) {
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  if (mesh.geometry) {
-    mesh.geometry.computeVertexNormals();
-  }
-  return mesh;
+function capsule(radius: number, length: number, material: THREE.Material) {
+  return new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 8, 16), material);
 }
 
-/**
- * High-detail procedural adult character.
- * This remains asset-free so the app can run on mobile without a large GLB.
- * It is intentionally more anatomically proportioned and softly shaded than
- * the original blocky placeholder.
- */
 export function buildCharacter(preset: CharacterPreset): CharacterRig {
   const group = new THREE.Group();
+
   const skin = mat(preset.skinTone, 0.48);
+  const skinSoft = mat(preset.skinTone, 0.58);
   const hairMat = new THREE.MeshStandardMaterial({
     color: preset.hairColor,
     roughness: 0.28,
     metalness: 0.02,
   });
 
-  const hipY = 0.88;
-  const shoulderY = 1.40;
-  const neckY = 1.48;
-  const headY = 1.64;
+  // Adult human proportions: feet to crown ~1.82m.
+  const hipY = 0.98;
+  const shoulderY = 1.47;
+  const neckY = 1.57;
+  const headY = 1.73;
 
+  // Dressed torso / blouse.
   const torso = new THREE.Group();
   torso.position.y = hipY;
   group.add(torso);
 
   const dressMat = new THREE.MeshStandardMaterial({
     color: preset.dressColor,
-    roughness: 0.62,
-    metalness: 0.02,
+    roughness: 0.78,
+    metalness: 0.01,
     side: THREE.DoubleSide,
   });
   const accentMat = new THREE.MeshStandardMaterial({
     color: preset.accentColor,
-    roughness: 0.35,
+    roughness: 0.42,
     metalness: 0.12,
   });
 
-  // Soft anatomical torso volumes, hidden under the dress bodice.
-  const chest = smooth(new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 32, 20),
+  const chest = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.22, 0.30, 8, 20),
     dressMat,
-  ));
-  chest.scale.set(0.88, 0.92, 0.56);
-  chest.position.set(0, 0.36, 0.0);
+  );
+  chest.scale.set(0.88, 1.0, 0.62);
+  chest.position.y = 0.30;
   torso.add(chest);
 
-  const waist = smooth(new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.13, 0.18, 8, 20),
+  const waist = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.145, 0.19, 0.24, 24),
     dressMat,
-  ));
-  waist.scale.set(1.0, 0.92, 0.78);
-  waist.position.y = 0.12;
+  );
+  waist.position.y = 0.05;
   torso.add(waist);
 
-  const belt = smooth(new THREE.Mesh(
-    new THREE.TorusGeometry(0.132, 0.012, 10, 32),
-    accentMat,
-  ));
+  // neckline + waist trim
+  const neckline = new THREE.TorusGeometry(0.13, 0.012, 8, 28, Math.PI * 1.55);
+  const neckTrim = new THREE.Mesh(neckline, accentMat);
+  neckTrim.rotation.x = Math.PI / 2;
+  neckTrim.rotation.z = Math.PI / 2;
+  neckTrim.position.set(0, 0.48, 0.08);
+  torso.add(neckTrim);
+
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.014, 10, 32), accentMat);
   belt.rotation.x = Math.PI / 2;
-  belt.position.y = 0.10;
+  belt.position.y = 0.02;
   torso.add(belt);
 
-  // Neck.
-  const neck = smooth(new THREE.Mesh(
-    new THREE.CylinderGeometry(0.048, 0.055, 0.11, 20),
-    skin,
-  ));
-  neck.position.y = neckY - hipY + 0.03;
+  // neck
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.058, 0.12, 16), skin);
+  neck.position.y = neckY - hipY;
   torso.add(neck);
 
-  // Head with separate face volumes for softer silhouette.
+  // head
   const head = new THREE.Group();
   head.position.y = headY - hipY;
   torso.add(head);
 
-  const face = smooth(new THREE.Mesh(
-    new THREE.SphereGeometry(0.115, 32, 24),
-    skin,
-  ));
-  face.scale.set(0.86, 1.08, 0.91);
-  face.position.set(0, 0.0, 0.005);
-  head.add(face);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.128, 32, 24), skin);
+  skull.scale.set(0.88, 1.05, 0.86);
+  skull.position.z = 0.005;
+  head.add(skull);
 
-  const chin = smooth(new THREE.Mesh(
-    new THREE.SphereGeometry(0.058, 24, 18),
-    skin,
-  ));
-  chin.scale.set(0.88, 0.62, 0.72);
-  chin.position.set(0, -0.075, 0.045);
-  head.add(chin);
+  const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.09, 24, 18), skin);
+  jaw.scale.set(0.78, 0.72, 0.72);
+  jaw.position.set(0, -0.065, 0.045);
+  head.add(jaw);
 
-  // Hair cap and a few broad locks instead of the old spiky strands.
-  const cap = smooth(new THREE.Mesh(
-    new THREE.SphereGeometry(0.119, 32, 24),
-    hairMat,
-  ));
-  cap.scale.set(0.94, 1.05, 0.98);
-  cap.position.set(0, 0.018, -0.008);
+  // hair cap + long back/side panels
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.136, 32, 24), hairMat);
+  cap.scale.set(0.91, 1.03, 0.9);
+  cap.position.set(0, 0.025, -0.018);
   head.add(cap);
 
-  const lockGeo = new THREE.CapsuleGeometry(0.022, 0.19, 6, 12);
-  const leftLock = smooth(new THREE.Mesh(lockGeo, hairMat));
-  leftLock.position.set(-0.092, -0.06, 0.005);
-  leftLock.rotation.z = -0.10;
-  head.add(leftLock);
-  const rightLock = smooth(new THREE.Mesh(lockGeo, hairMat));
-  rightLock.position.set(0.092, -0.06, 0.005);
-  rightLock.rotation.z = 0.10;
-  head.add(rightLock);
+  const backHair = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.115, 0.36, 8, 16),
+    hairMat,
+  );
+  backHair.scale.set(1.0, 1.15, 0.55);
+  backHair.position.set(0, -0.16, -0.07);
+  head.add(backHair);
 
-  // Eyes, brows, nose and lips give the face readable adult features.
-  const eyeMat = new THREE.MeshStandardMaterial({
-    color: '#15120f',
-    roughness: 0.22,
-    metalness: 0.0,
-  });
-  const eyeGeo = new THREE.SphereGeometry(0.012, 16, 12);
   for (const side of [-1, 1]) {
-    const eye = smooth(new THREE.Mesh(eyeGeo, eyeMat));
-    eye.position.set(side * 0.036, 0.018, 0.103);
-    eye.scale.set(1.0, 0.82, 0.55);
-    head.add(eye);
-
-    const brow = smooth(new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.006, 0.026, 4, 8),
+    const lock = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.038, 0.32, 6, 12),
       hairMat,
-    ));
-    brow.position.set(side * 0.036, 0.045, 0.098);
-    brow.rotation.z = side * 0.08;
-    head.add(brow);
+    );
+    lock.position.set(side * 0.105, -0.15, 0.01);
+    lock.rotation.z = side * 0.08;
+    head.add(lock);
   }
 
-  const nose = smooth(new THREE.Mesh(
-    new THREE.ConeGeometry(0.014, 0.045, 12),
-    skin,
-  ));
+  // face
+  const eyeWhite = new THREE.MeshStandardMaterial({ color: '#f7f2ec', roughness: 0.4 });
+  const eyeDark = new THREE.MeshStandardMaterial({ color: '#17120f', roughness: 0.3 });
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.017, 12, 10), eyeWhite);
+    eye.scale.set(1.0, 0.72, 0.55);
+    eye.position.set(side * 0.042, 0.012, 0.105);
+    head.add(eye);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), eyeDark);
+    iris.position.set(side * 0.042, 0.012, 0.114);
+    head.add(iris);
+  }
+
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.045, 8), skinSoft);
   nose.rotation.x = Math.PI / 2;
-  nose.position.set(0, -0.005, 0.108);
+  nose.position.set(0, -0.018, 0.112);
   head.add(nose);
 
-  const lipMat = new THREE.MeshStandardMaterial({
-    color: '#9f4b50',
-    roughness: 0.42,
-  });
-  const lips = smooth(new THREE.Mesh(
-    new THREE.SphereGeometry(0.018, 16, 10),
-    lipMat,
-  ));
-  lips.scale.set(1.25, 0.38, 0.55);
-  lips.position.set(0, -0.052, 0.105);
+  const lipMat = new THREE.MeshStandardMaterial({ color: '#9e4e50', roughness: 0.45 });
+  const lips = new THREE.Mesh(new THREE.SphereGeometry(0.018, 12, 8), lipMat);
+  lips.scale.set(1.35, 0.42, 0.5);
+  lips.position.set(0, -0.073, 0.108);
   head.add(lips);
 
-  // Arms with visible forearms and hands.
+  // arms
   function buildArm(side: -1 | 1) {
     const arm = new THREE.Group();
-    arm.position.set(side * 0.18, shoulderY - hipY + 0.02, 0);
+    arm.position.set(side * 0.22, shoulderY - hipY + 0.02, 0);
 
-    const upper = smooth(new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.041, 0.22, 8, 16),
-      skin,
-    ));
+    const upper = capsule(0.055, 0.19, skin);
     upper.position.y = -0.13;
     arm.add(upper);
 
-    const sleeve = smooth(new THREE.Mesh(
-      new THREE.CylinderGeometry(0.058, 0.064, 0.17, 20),
+    const sleeve = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.075, 0.068, 0.18, 18),
       dressMat,
-    ));
-    sleeve.position.y = -0.08;
+    );
+    sleeve.position.y = -0.09;
     arm.add(sleeve);
 
     const fore = new THREE.Group();
     fore.position.y = -0.25;
-
-    const foreMesh = smooth(new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.034, 0.22, 8, 16),
-      skin,
-    ));
-    foreMesh.position.y = -0.13;
+    const foreMesh = capsule(0.045, 0.19, skin);
+    foreMesh.position.y = -0.12;
     fore.add(foreMesh);
 
-    const hand = smooth(new THREE.Mesh(
-      new THREE.SphereGeometry(0.043, 18, 14),
-      skin,
-    ));
-    hand.scale.set(0.82, 1.12, 0.68);
-    hand.position.y = -0.275;
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), skin);
+    hand.scale.set(0.82, 1.15, 0.62);
+    hand.position.y = -0.255;
     fore.add(hand);
 
     arm.add(fore);
-    arm.rotation.z = side * 0.08;
-    return { arm, fore, hand };
+    arm.rotation.z = side * 0.10;
+    return { arm, hand };
   }
 
   const armR = buildArm(1);
   const armL = buildArm(-1);
   torso.add(armR.arm, armL.arm);
 
-  // Legs and simple shoes.
-  const legGeo = new THREE.CapsuleGeometry(0.052, 0.72, 8, 16);
-  const legL = smooth(new THREE.Mesh(legGeo, skin));
-  legL.position.set(-0.075, 0.42, 0);
-  const legR = smooth(new THREE.Mesh(legGeo, skin));
-  legR.position.set(0.075, 0.42, 0);
+  // legs + shoes
+  const legMat = skin;
+  const legL = capsule(0.065, 0.55, legMat);
+  legL.position.set(-0.085, 0.47, 0);
+  const legR = capsule(0.065, 0.55, legMat);
+  legR.position.set(0.085, 0.47, 0);
   group.add(legL, legR);
 
-  const shoeMat = mat('#29231f', 0.42);
-  const shoeGeo = new THREE.BoxGeometry(0.095, 0.055, 0.19);
-  const shoeL = smooth(new THREE.Mesh(shoeGeo, shoeMat));
-  shoeL.position.set(-0.075, 0.025, 0.025);
-  const shoeR = smooth(new THREE.Mesh(shoeGeo, shoeMat));
-  shoeR.position.set(0.075, 0.025, 0.025);
-  group.add(shoeL, shoeR);
+  const shoeMat = mat('#27242a', 0.38);
+  for (const side of [-1, 1]) {
+    const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), shoeMat);
+    shoe.scale.set(0.75, 0.34, 1.35);
+    shoe.position.set(side * 0.085, 0.055, 0.045);
+    group.add(shoe);
+  }
 
-  // Cloth anchors.
+  // waist anchors for simulated skirt
   const waistAnchors: THREE.Object3D[] = [];
   const WAIST_COLS = 18;
   for (let c = 0; c < WAIST_COLS; c++) {
     const o = new THREE.Object3D();
     const a = (c / WAIST_COLS) * Math.PI * 2;
-    o.position.set(Math.sin(a) * 0.13, 0.10, Math.cos(a) * 0.13);
+    o.position.set(Math.sin(a) * 0.17, 0.02, Math.cos(a) * 0.17);
     torso.add(o);
     waistAnchors.push(o);
   }
 
   const sleeveAnchors: THREE.Object3D[] = [];
-  for (const side of [-1, 1] as const) {
+  for (const side of [-1, 1]) {
     for (let k = 0; k < 6; k++) {
       const o = new THREE.Object3D();
       const a = (k / 6) * Math.PI * 2;
       o.position.set(
-        side * 0.18 + Math.sin(a) * 0.055,
-        shoulderY - hipY - 0.14,
-        Math.cos(a) * 0.055,
+        side * 0.22 + Math.sin(a) * 0.065,
+        shoulderY - hipY - 0.10,
+        Math.cos(a) * 0.065,
       );
       torso.add(o);
       sleeveAnchors.push(o);
     }
   }
 
-  // Roots are kept stable and are used by the hair simulation.
   const hairRoots: THREE.Object3D[] = [];
-  for (let i = 0; i < 14; i++) {
-    const row = i % 7;
-    const a = (row / 7) * Math.PI * 2;
-    const lvl = Math.floor(i / 7);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
     const o = new THREE.Object3D();
-    o.position.set(
-      Math.sin(a) * (0.078 - lvl * 0.010),
-      lvl === 0 ? 0.045 : -0.005,
-      Math.cos(a) * 0.065 - 0.018,
-    );
+    o.position.set(Math.sin(a) * 0.09, 0.02 + Math.cos(a) * 0.035, Math.cos(a) * 0.055 - 0.015);
     head.add(o);
     hairRoots.push(o);
   }

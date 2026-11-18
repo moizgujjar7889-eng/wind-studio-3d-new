@@ -185,7 +185,7 @@ export class WindScene {
       this.rig.head.rotation.x = Math.sin(time * 0.7 + 1) * 0.02 - w * 0.06;
     }
 
-    this.dress?.update(dt, time, effective);
+    this.dress?.update(dt, time, w);
     this.env?.update(dt, time, effective);
 
     // camera micro-shake with strong wind + orbit yaw
