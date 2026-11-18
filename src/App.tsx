@@ -24,6 +24,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<'closed' | 'style'>('closed');
   const [fps, setFps] = useState(60);
+  const [manualWind, setManualWind] = useState(0);
+  const [useManual, setUseManual] = useState(false);
 
   // ---- scene boot ----
   useEffect(() => {
@@ -53,9 +55,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (listening || demoMode) return;
+    if (listening || demoMode || useManual) return;
     applyWind(0);
-  }, [listening, demoMode, applyWind]);
+  }, [listening, demoMode, useManual, applyWind]);
+
+  useEffect(() => {
+    if (!useManual) return;
+    applyWind(manualWind);
+  }, [manualWind, useManual, applyWind]);
 
   const startMic = useCallback(async () => {
     setError(null);
@@ -125,7 +132,12 @@ export default function App() {
     dragRef.current.active = false;
   };
 
-  const active = listening || demoMode;
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    sceneRef.current?.addZoom(e.deltaY * 0.002);
+  };
+
+  const active = listening || demoMode || useManual;
 
   return (
     <div className="fixed inset-0 bg-[#0a0e14] overflow-hidden font-sans">
@@ -137,6 +149,7 @@ export default function App() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
+        onWheel={onWheel}
       />
 
       {/* top bar */}
@@ -233,6 +246,38 @@ export default function App() {
                 </button>
               )}
 
+              {/* Manual wind slider */}
+              <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] uppercase tracking-[0.18em] text-white/50 font-semibold">
+                    Manual Wind
+                  </label>
+                  <span className="text-sm font-bold text-sky-300 tabular-nums">
+                    {Math.round(manualWind * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={manualWind}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setManualWind(v);
+                    setUseManual(true);
+                    if (listening) stopMic();
+                    if (demoMode) stopDemo();
+                    applyWind(v);
+                  }}
+                  className="w-full h-2 rounded-full appearance-none bg-white/15 accent-sky-400 cursor-pointer"
+                />
+                <div className="flex justify-between mt-1.5 text-[9px] text-white/30 uppercase tracking-wider">
+                  <span>Calm</span>
+                  <span>Gale</span>
+                </div>
+              </div>
+
               <div className="flex gap-2.5">
                 <button
                   onClick={() => setPanel(panel === 'style' ? 'closed' : 'style')}
@@ -245,8 +290,13 @@ export default function App() {
                   />
                 </button>
                 <button
-                  onClick={() => sceneRef.current?.resetYaw()}
-                  title="Reset view"
+                  onClick={() => {
+                    sceneRef.current?.resetYaw();
+                    setManualWind(0);
+                    setUseManual(false);
+                    applyWind(0);
+                  }}
+                  title="Reset simulation & view"
                   className="flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/15 active:scale-[0.98] transition-all text-white/85 py-3 px-4 border border-white/10"
                 >
                   <RotateCcw className="w-4 h-4" />
