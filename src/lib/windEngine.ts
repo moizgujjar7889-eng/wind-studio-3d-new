@@ -145,15 +145,15 @@ export class WindEngine {
       this.noiseFloor = Math.max(0.004, this.noiseFloor * 0.999 + rms * 0.001);
     }
 
-    // Curve into 0..1
-    const shaped = Math.min(1, Math.pow(breath * 6.5, 0.62));
+    // Curve into 0..1 — slightly more sensitive so light blowing registers
+    const shaped = Math.min(1, Math.pow(breath * 8.2, 0.58));
     this.raw = shaped;
-    this.peakHold = Math.max(this.peakHold * 0.995, shaped);
-    // Fast attack, slow release for gusty feel
+    this.peakHold = Math.max(this.peakHold * 0.993, shaped);
+    // Fast attack, slower release for satisfying gust feel
     this.smoothed =
       shaped > this.smoothed
-        ? this.smoothed + (shaped - this.smoothed) * 0.5
-        : this.smoothed + (shaped - this.smoothed) * 0.07;
+        ? this.smoothed + (shaped - this.smoothed) * 0.55
+        : this.smoothed + (shaped - this.smoothed) * 0.065;
 
     this.listener?.(this.smoothed, this.status);
   };
