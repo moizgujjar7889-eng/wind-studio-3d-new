@@ -1,32 +1,62 @@
-# Assets for Wind Studio 3D
+# Wind Studio 3D
 
-## Character models (optional)
+Interactive 3D experience where you control the wind by blowing into your microphone. Watch the character's dress and hair react in real time, and see her raise her hands to hold the hem when gusts get strong.
 
-Place realistic adult female (18+) character GLB files here:
+## Features
 
-  public/assets/characters/<character-id>.glb
+- **Microphone wind control** — blow into the mic to drive the simulation
+- **Manual wind slider** — adjust strength without a mic
+- **Demo gusts** — automatic wind cycle for demos
+- **8 characters** with different outfits (long dress, summer dress, skirt & blouse, jacket & skirt, trousers)
+- **7 locations**: Garden, Beach, Park, Rooftop, Outdoor Terrace, Forest, Modern Courtyard
+- Real-time cloth + hair Verlet simulation
+- Hands react to strong wind (character tries to hold her dress)
+- Orbit camera (drag to rotate, scroll to zoom)
 
-Example:
-  public/assets/characters/amara.glb
-  public/assets/characters/sofia.glb
+## Run locally
 
-Recommended sources (CC0 / free for personal use):
-- Mixamo (export as GLB, adult female characters)
-- MakeHuman / MPFB (CC0 base meshes)
-- Other CC0 adult female models with normal everyday clothing
+```bash
+npm install
+npm run dev
+```
 
-If no matching GLB is found the project falls back to the improved
-procedural adult-female character (clearly non-photorealistic).
+Open the URL shown in the terminal (usually http://localhost:5173).
 
-The procedural character is intentionally adult in proportions and
-appearance. Do not replace it with child or teen models.
+## Deploy (GitHub Pages)
 
-## Environments (optional)
+The included GitHub Actions workflow builds and deploys to GitHub Pages on push to `main`.
 
-Additional environment props can be placed under:
+1. Push this repo to GitHub
+2. Settings → Pages → Source: GitHub Actions
+3. After the workflow runs, the site will be live
 
-  public/assets/environments/
+## Project structure
 
-These are not required; the built-in procedural locations already
-provide Garden, Beach, Park, Rooftop, Outdoor Terrace, Forest and
-Modern Courtyard.
+```
+src/
+  App.tsx                 # Main UI + wind controls
+  components/
+    StylePanel.tsx        # Character & location picker
+    WindMeter.tsx         # Wind level display
+  lib/
+    characters.ts         # Character presets
+    locations.ts          # Location presets
+    types.ts
+    windEngine.ts         # Mic + demo wind engines
+  three/
+    character.ts          # Procedural adult female character
+    cloth.ts              # Verlet cloth & hair
+    dressSim.ts           # Dress + hair simulation + hand reaction
+    environment.ts        # Locations / props
+    windScene.ts          # Three.js scene orchestration
+```
+
+## Notes
+
+- Character is procedural (Three.js geometry). For photorealistic GLB models you can place files under `public/assets/characters/` in a future upgrade.
+- Best experience on a device with a working microphone and Chrome / Edge / Safari.
+- Grant microphone permission when the browser asks.
+
+## License
+
+Personal / educational use. Do not use child or teen character models.
