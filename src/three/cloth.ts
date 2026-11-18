@@ -97,12 +97,15 @@ export class Cloth {
         const fx = dx * diff;
         const fy = dy * diff;
         const fz = dz * diff;
-        pos[a] += fx * (pi / total) * 2;
-        pos[a + 1] += fy * (pi / total) * 2;
-        pos[a + 2] += fz * (pi / total) * 2;
-        pos[b] -= fx * (pj / total) * 2;
-        pos[b + 1] -= fy * (pj / total) * 2;
-        pos[b + 2] -= fz * (pj / total) * 2;
+        // Apply the positional correction once. The previous implementation
+        // multiplied the correction by 2, which over-corrected every constraint
+        // and caused the skirt/hair particles to explode under wind.
+        pos[a] += fx * (pi / total);
+        pos[a + 1] += fy * (pi / total);
+        pos[a + 2] += fz * (pi / total);
+        pos[b] -= fx * (pj / total);
+        pos[b + 1] -= fy * (pj / total);
+        pos[b + 2] -= fz * (pj / total);
       }
     }
   }
