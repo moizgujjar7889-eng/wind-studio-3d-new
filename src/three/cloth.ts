@@ -1,14 +1,9 @@
 import * as THREE from 'three';
 
-/**
- * Verlet particle cloth. Positions live in world space so wind and
- * character motion can be applied directly.
- */
 export class Cloth {
   pos: Float32Array;
   prev: Float32Array;
   pinned: Uint8Array;
-  /** [i, j, restLength] triplets */
   constraints: number[];
   count: number;
   damping: number;
@@ -24,12 +19,8 @@ export class Cloth {
 
   setPos(i: number, x: number, y: number, z: number) {
     const p = i * 3;
-    this.pos[p] = x;
-    this.pos[p + 1] = y;
-    this.pos[p + 2] = z;
-    this.prev[p] = x;
-    this.prev[p + 1] = y;
-    this.prev[p + 2] = z;
+    this.pos[p] = x; this.pos[p + 1] = y; this.pos[p + 2] = z;
+    this.prev[p] = x; this.prev[p + 1] = y; this.prev[p + 2] = z;
   }
 
   addConstraint(i: number, j: number) {
@@ -45,86 +36,64 @@ export class Cloth {
     for (let i = 0; i < count; i++) {
       if (pinned[i]) continue;
       const p = i * 3;
-      const x = pos[p];
-      const y = pos[p + 1];
-      const z = pos[p + 2];
       windAt(i, tmp);
-      const ax = tmp.x;
-      const ay = gravity + tmp.y;
-      const az = tmp.z;
-      let nx = x + (x - prev[p]) * this.damping + ax * dt * dt;
-      let ny = y + (y - prev[p + 1]) * this.damping + ay * dt * dt;
-      let nz = z + (z - prev[p + 2]) * this.damping + az * dt * dt;
-      // clamp to avoid explosions
-      const mdx = nx - x;
-      const mdy = ny - y;
-      const mdz = nz - z;
-      const maxStep = 0.12;
-      const md = Math.sqrt(mdx * mdx + mdy * mdy + mdz * mdz);
-      if (md > maxStep) {
-        const s = maxStep / md;
-        nx = x + mdx * s;
-        ny = y + mdy * s;
-        nz = z + mdz * s;
+      const ax = THREE.MathUtils.clamp(tmp.x, -18, 18);
+      const ay = THREE.MathUtils.clamp(gravity + tmp.y, -20, 20);
+      const az = THREE.MathUtils.clamp(tmp.z, -18, 18);
+
+      let nx = pos[p] + (pos[p] - prev[p]) * this.damping + ax * dt * dt;
+      let ny = pos[p + 1] + (pos[p + 1] - prev[p + 1]) * this.damping + ay * dt * dt;
+      let nz = pos[p + 2] + (pos[p + 2] - prev[p + 2]) * this.damping + az * dt * dt;
+
+      const dx = nx - pos[p], dy = ny - pos[p + 1], dz = nz - pos[p + 2];
+      const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const maxStep = 0.075;
+      if (d > maxStep) {
+        const s = maxStep / d;
+        nx = pos[p] + dx * s;
+        ny = pos[p + 1] + dy * s;
+        nz = pos[p + 2] + dz * s;
       }
-      prev[p] = x;
-      prev[p + 1] = y;
-      prev[p + 2] = z;
-      pos[p] = nx;
-      pos[p + 1] = ny;
-      pos[p + 2] = nz;
+
+      prev[p] = pos[p]; prev[p + 1] = pos[p + 1]; prev[p + 2] = pos[p + 2];
+      pos[p] = nx; pos[p + 1] = ny; pos[p + 2] = nz;
     }
   }
 
-  satisfy(iterations = 4) {
+  satisfy(iterations = 6) {
     const { pos, constraints, pinned } = this;
     for (let k = 0; k < iterations; k++) {
       for (let c = 0; c < constraints.length; c += 3) {
-        const i = constraints[c];
-        const j = constraints[c + 1];
-        const rest = constraints[c + 2];
-        const a = i * 3;
-        const b = j * 3;
-        const dx = pos[b] - pos[a];
-        const dy = pos[b + 1] - pos[a + 1];
-        const dz = pos[b + 2] - pos[a + 2];
+        const i = constraints[c], j = constraints[c + 1], rest = constraints[c + 2];
+        const a = i * 3, b = j * 3;
+        const dx = pos[b] - pos[a], dy = pos[b + 1] - pos[a + 1], dz = pos[b + 2] - pos[a + 2];
         const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
         const diff = (d - rest) / d;
-        const pi = pinned[i] ? 0 : 0.5;
-        const pj = pinned[j] ? 0 : 0.5;
-        const total = pi + pj;
-        if (total === 0) continue;
-        const fx = dx * diff;
-        const fy = dy * diff;
-        const fz = dz * diff;
-        // Apply the positional correction once. The previous implementation
-        // multiplied the correction by 2, which over-corrected every constraint
-        // and caused the skirt/hair particles to explode under wind.
-        pos[a] += fx * (pi / total);
-        pos[a + 1] += fy * (pi / total);
-        pos[a + 2] += fz * (pi / total);
-        pos[b] -= fx * (pj / total);
-        pos[b + 1] -= fy * (pj / total);
-        pos[b + 2] -= fz * (pj / total);
+        const wi = pinned[i] ? 0 : 1;
+        const wj = pinned[j] ? 0 : 1;
+        const total = wi + wj;
+        if (!total) continue;
+
+        const fx = dx * diff, fy = dy * diff, fz = dz * diff;
+        pos[a] += fx * (wi / total);
+        pos[a + 1] += fy * (wi / total);
+        pos[a + 2] += fz * (wi / total);
+        pos[b] -= fx * (wj / total);
+        pos[b + 1] -= fy * (wj / total);
+        pos[b + 2] -= fz * (wj / total);
       }
     }
   }
 }
 
 export interface SkirtOptions {
-  cols: number;
-  rows: number;
-  waistY: number;
-  hemY: number;
-  waistRx: number;
-  waistRz: number;
-  hemScale: number;
+  cols: number; rows: number; waistY: number; hemY: number;
+  waistRx: number; waistRz: number; hemScale: number;
 }
 
-/** Builds a skirt-shaped cloth: a closed tube pinned at the waist ring. */
 export function createSkirt(opt: SkirtOptions) {
   const { cols, rows, waistY, hemY, waistRx, waistRz, hemScale } = opt;
-  const cloth = new Cloth(cols * rows, 0.975);
+  const cloth = new Cloth(cols * rows, 0.985);
   for (let r = 0; r < rows; r++) {
     const t = r / (rows - 1);
     const y = waistY + (hemY - waistY) * t;
@@ -136,16 +105,15 @@ export function createSkirt(opt: SkirtOptions) {
       cloth.setPos(i, Math.sin(a) * rx, y, Math.cos(a) * rz);
       if (r === 0) cloth.pinned[i] = 1;
       if (r > 0) cloth.addConstraint(i, i - cols);
-      cloth.addConstraint(i, ((c + 1) % cols) === 0 ? r * cols : i + 1);
+      cloth.addConstraint(i, r * cols + ((c + 1) % cols));
     }
   }
-  // shear constraints for stability
   for (let r = 1; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
       const up = i - cols;
       cloth.addConstraint(i, up + ((c + 1) % cols));
-      if (c > 0) cloth.addConstraint(i, up + c - 1);
+      cloth.addConstraint(i, up + ((c + cols - 1) % cols));
     }
   }
 
@@ -163,10 +131,8 @@ export function createSkirt(opt: SkirtOptions) {
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < cols; c++) {
       const c2 = (c + 1) % cols;
-      const a = r * cols + c;
-      const b = r * cols + c2;
-      const d = (r + 1) * cols + c;
-      const e = (r + 1) * cols + c2;
+      const a = r * cols + c, b = r * cols + c2;
+      const d = (r + 1) * cols + c, e = (r + 1) * cols + c2;
       indices.push(a, d, b, b, d, e);
     }
   }
@@ -177,27 +143,15 @@ export function createSkirt(opt: SkirtOptions) {
 }
 
 export interface Strand {
-  sim: Cloth;
-  links: number;
-  root: THREE.Vector3;
-  /** initial direction, unit-ish */
-  dir: THREE.Vector3;
-  segLen: number;
+  sim: Cloth; links: number; root: THREE.Vector3; dir: THREE.Vector3; segLen: number;
 }
 
-/**
- * Long hair simulated as a set of Verlet strands rendered as tapering
- * ribbon strips.
- */
 export function createHairStrands(opts: {
-  roots: THREE.Vector3[];
-  segLen: number;
-  links: number;
-  dir: THREE.Vector3;
+  roots: THREE.Vector3[]; segLen: number; links: number; dir: THREE.Vector3;
 }) {
   const { roots, segLen, links, dir } = opts;
   const strands: Strand[] = roots.map((root) => {
-    const sim = new Cloth(links, 0.97);
+    const sim = new Cloth(links, 0.985);
     for (let s = 0; s < links; s++) {
       sim.setPos(
         s,
@@ -211,18 +165,14 @@ export function createHairStrands(opts: {
     return { sim, links, root: root.clone(), dir: dir.clone(), segLen };
   });
 
-  const vertsPerStrand = links * 2;
-  const positions = new Float32Array(strands.length * vertsPerStrand * 3);
+  const positions = new Float32Array(strands.length * links * 2 * 3);
   const indices: number[] = [];
-  let v = 0;
   for (let s = 0; s < strands.length; s++) {
     for (let seg = 0; seg < links - 1; seg++) {
-      const base = s * vertsPerStrand + seg * 2;
+      const base = s * links * 2 + seg * 2;
       indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
-      v++;
     }
   }
-  void v;
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setIndex(indices);

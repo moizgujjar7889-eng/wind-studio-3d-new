@@ -89,10 +89,10 @@ export function createDressSimulation(
     const y = p[i * 3 + 1];
     const height01 = THREE.MathUtils.clamp((y - hemY) / Math.max(0.01, waistWorldY - hemY), 0, 1);
     const flutter = 0.55 + 0.45 * Math.sin(t * 7 + i * 0.7) * Math.sin(t * 3.1 + i * 0.23);
-    const strength = wind01 * wind01 * 9 + wind01 * 2.2;
+    const strength = wind01 * wind01 * 5.0 + wind01 * 1.5;
     out.copy(WIND_DIR)
       .multiplyScalar(strength * flutter * (0.35 + 0.65 * (1 - height01) * 0.5 + 0.5));
-    out.y += wind01 * 2.4 * flutter;
+    out.y += wind01 * 0.8 * flutter;
     // gentle idle sway
     out.x += Math.sin(t * 1.3 + i * 0.5) * 0.12;
     out.z += Math.cos(t * 1.1 + i * 0.4) * 0.12;
@@ -116,7 +116,7 @@ export function createDressSimulation(
     }
 
     skirt.step(dt, gravity, (i, out) => windForceAt(i, out, time, wind01));
-    skirt.satisfy(3);
+    skirt.satisfy(6);
 
     // skirt collision: keep hem outside a cylinder around the legs
     const minR = 0.16 + opts.fit * 0.02;
@@ -151,11 +151,11 @@ export function createDressSimulation(
       strand.sim.step(dt, gravity, (_i, out) => {
         const sway = 0.5 + 0.5 * Math.sin(time * 6 + v);
         out.copy(WIND_DIR)
-          .multiplyScalar((wind01 * wind01 * 7 + wind01 * 1.5) * (0.7 + 0.6 * sway));
+          .multiplyScalar((wind01 * wind01 * 4.0 + wind01 * 1.0) * (0.7 + 0.6 * sway));
         out.y += Math.sin(time * 4 + v) * wind01 * 1.2;
         out.z += Math.cos(time * 3 + v * 1.7) * wind01 * 0.8;
       });
-      strand.sim.satisfy(2);
+      strand.sim.satisfy(4);
 
       // upload as ribbon: for each segment, two verts offset in view-ish plane
       for (let s = 0; s < strand.links - 1; s++) {
@@ -198,11 +198,13 @@ export function createDressSimulation(
     hairPos.needsUpdate = true;
 
     // ---- hands rise to hold hem under strong wind ----
-    const target = THREE.MathUtils.clamp((wind01 - 0.35) / 0.45, 0, 1);
+    const target = THREE.MathUtils.clamp((wind01 - 0.25) / 0.55, 0, 1);
     hold += (target - hold) * Math.min(1, dt * 4);
     const lift = hold;
-    rig.armR.rotation.z = baseArmRotR - lift * 0.55;
-    rig.armL.rotation.z = baseArmRotL + lift * 0.55;
+    rig.armR.rotation.z = baseArmRotR - lift * 0.72;
+    rig.armL.rotation.z = baseArmRotL + lift * 0.72;
+    rig.armR.rotation.x = -lift * 0.38;
+    rig.armL.rotation.x = -lift * 0.38;
     // slight forward hunch with strong wind
     rig.torso.rotation.x = wind01 * 0.1;
     // head turns slightly away from the wind
