@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/wind-studio-3d-new/',
   plugins: [react()],
   resolve: {
     alias: {
