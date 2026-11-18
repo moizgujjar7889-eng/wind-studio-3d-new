@@ -13,7 +13,7 @@ export class Cloth {
   count: number;
   damping: number;
 
-  constructor(count: number, damping = 0.985) {
+  constructor(count: number, damping = 0.978) {
     this.count = count;
     this.pos = new Float32Array(count * 3);
     this.prev = new Float32Array(count * 3);
@@ -42,7 +42,6 @@ export class Cloth {
   step(dt: number, gravity: number, windAt: (i: number, out: THREE.Vector3) => void) {
     const { pos, prev, pinned, count } = this;
     const tmp = new THREE.Vector3();
-    const h = Math.min(dt, 1 / 30);
     for (let i = 0; i < count; i++) {
       if (pinned[i]) continue;
       const p = i * 3;
@@ -53,15 +52,14 @@ export class Cloth {
       const ax = tmp.x;
       const ay = gravity + tmp.y;
       const az = tmp.z;
-      let nx = x + (x - prev[p]) * this.damping + ax * h * h;
-      let ny = y + (y - prev[p + 1]) * this.damping + ay * h * h;
-      let nz = z + (z - prev[p + 2]) * this.damping + az * h * h;
-
-      // Hard velocity cap prevents unstable frames from exploding the mesh.
+      let nx = x + (x - prev[p]) * this.damping + ax * dt * dt;
+      let ny = y + (y - prev[p + 1]) * this.damping + ay * dt * dt;
+      let nz = z + (z - prev[p + 2]) * this.damping + az * dt * dt;
+      // clamp to avoid explosions / stretching
       const mdx = nx - x;
       const mdy = ny - y;
       const mdz = nz - z;
-      const maxStep = 0.045 + h * 0.5;
+      const maxStep = 0.06;
       const md = Math.sqrt(mdx * mdx + mdy * mdy + mdz * mdz);
       if (md > maxStep) {
         const s = maxStep / md;
@@ -69,7 +67,6 @@ export class Cloth {
         ny = y + mdy * s;
         nz = z + mdz * s;
       }
-
       prev[p] = x;
       prev[p + 1] = y;
       prev[p + 2] = z;
@@ -79,7 +76,7 @@ export class Cloth {
     }
   }
 
-  satisfy(iterations = 5) {
+  satisfy(iterations = 4) {
     const { pos, constraints, pinned } = this;
     for (let k = 0; k < iterations; k++) {
       for (let c = 0; c < constraints.length; c += 3) {
@@ -92,24 +89,23 @@ export class Cloth {
         const dy = pos[b + 1] - pos[a + 1];
         const dz = pos[b + 2] - pos[a + 2];
         const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-        const error = THREE.MathUtils.clamp((d - rest) / d, -0.25, 0.25);
-        const wi = pinned[i] ? 0 : 0.5;
-        const wj = pinned[j] ? 0 : 0.5;
-        const total = wi + wj;
-        if (!total) continue;
-        const fx = dx * error * 0.75;
-        const fy = dy * error * 0.75;
-        const fz = dz * error * 0.75;
-        pos[a] += fx * (wi / total);
-        pos[a + 1] += fy * (wi / total);
-        pos[a + 2] += fz * (wi / total);
-        pos[b] -= fx * (wj / total);
-        pos[b + 1] -= fy * (wj / total);
-        pos[b + 2] -= fz * (wj / total);
+        const diff = (d - rest) / d;
+        const pi = pinned[i] ? 0 : 0.5;
+        const pj = pinned[j] ? 0 : 0.5;
+        const total = pi + pj;
+        if (total === 0) continue;
+        const fx = dx * diff;
+        const fy = dy * diff;
+        const fz = dz * diff;
+        pos[a] += fx * (pi / total) * 2;
+        pos[a + 1] += fy * (pi / total) * 2;
+        pos[a + 2] += fz * (pi / total) * 2;
+        pos[b] -= fx * (pj / total) * 2;
+        pos[b + 1] -= fy * (pj / total) * 2;
+        pos[b + 2] -= fz * (pj / total) * 2;
       }
     }
   }
-
 }
 
 export interface SkirtOptions {
