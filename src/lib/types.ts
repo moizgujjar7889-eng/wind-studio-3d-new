@@ -1,4 +1,11 @@
-export type LocationId = 'garden' | 'beach' | 'park' | 'rooftop';
+export type LocationId =
+  | 'garden'
+  | 'beach'
+  | 'park'
+  | 'rooftop'
+  | 'terrace'
+  | 'forest'
+  | 'courtyard';
 
 export interface LocationPreset {
   id: LocationId;
@@ -26,19 +33,23 @@ export interface LocationPreset {
   particleCount: number;
 }
 
+export type OutfitStyle = 'long_dress' | 'summer_dress' | 'skirt_blouse' | 'jacket_skirt' | 'trousers_top';
+
 export interface CharacterPreset {
   id: string;
   name: string;
-  /** Cloth hex color for the dress */
+  /** Cloth hex color for the main garment */
   dressColor: string;
   /** Accent / trim hex color */
   accentColor: string;
   hairColor: string;
   skinTone: string;
-  /** Max dress length, 1.0 = ankle, lower = shorter */
+  /** Max dress/skirt length, 1.0 = ankle, lower = shorter */
   dressLength: number;
-  /** Dress silhouette: 0 = A-line, 1 = fitted sheath */
+  /** Silhouette: 0 = A-line / loose, 1 = fitted */
   fit: number;
+  /** Clothing style for mesh generation */
+  style: OutfitStyle;
   description: string;
 }
 
